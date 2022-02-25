@@ -23,8 +23,8 @@
 #define POTPIN A0  // Pin that reads potentiometer input
 
 // Ramp parameters
-#define MINPOWER 25 // minimum power level to start ramping up from
-#define RAMPT 25    // time (ms) per percent of power ramp up. lower value = faster acceleration
+#define MINPOWER 0 // minimum power level to start ramping up from
+#define RAMPT 50    // time (ms) per percent of power ramp up. lower value = faster acceleration
 
 // Function prototypes
 
@@ -37,7 +37,7 @@ uint8_t powerLevel(uint8_t);
 // Converts 0-100% to 8 bit PWM value for analogWrite function
 uint8_t powerLevel(uint8_t powerPercent)
 {
-  return map(powerPercent, 0, 100, 25, 229);
+  return map(powerPercent, 0, 100, 50, 255);
 }
 
 // Returns true if Accelerator pedal is pressed
@@ -79,7 +79,7 @@ void rampUp(uint8_t maxPower)
     digitalWrite(LED_BUILTIN, LOW); // turn off built-in LED
     powerPercent = MINPOWER;        // Reset power to minimum when accelerator pedal is depressed. TO DO: check if maxPower < MINPOWER
     // Don't write powerPercent to output pin, so that the value set on the pot can be read on the display.
-    analogWrite(SPEEDPIN, powerLevel(maxPower)); // set output to maxPower so value can be read on the display.
+    analogWrite(SPEEDPIN, powerLevel(MINPOWER)); // set output to minPower for next run
   }
 }
 
