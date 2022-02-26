@@ -14,6 +14,7 @@
 // - Add fire
 
 #include <Arduino.h>
+#include <FastLED.h>
 
 //#define DEBUG_SERIAL // Enable serial debugging
 
@@ -24,7 +25,20 @@
 
 // Ramp parameters
 #define MINPOWER 0 // minimum power level to start ramping up from
-#define RAMPT 50    // time (ms) per percent of power ramp up. lower value = faster acceleration
+#define RAMPT 50   // time (ms) per percent of power ramp up. lower value = faster acceleration
+
+// FastLED
+
+#define LED_PIN 5
+#define COLOR_ORDER GRB
+#define CHIPSET WS2812B
+#define NUM_LEDS 14
+
+#define BRIGHTNESS 200
+
+bool gReverseDirection = false;
+
+CRGB leds[NUM_LEDS];
 
 // Function prototypes
 
@@ -33,6 +47,51 @@ bool acc();
 uint8_t powerLevel(uint8_t);
 
 // Function definitions
+
+void setup()
+{
+
+#ifdef DEBUG_SERIAL
+  Serial.begin(9600);
+#endif
+
+  // Pin setups
+  pinMode(SPEEDPIN, OUTPUT);
+  pinMode(ACCPIN, INPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  // FastLED setup
+  FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(BRIGHTNESS);
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    leds[i] = CRGB::Black;
+  }
+  FastLED.show();
+}
+
+void loop()
+{
+
+  static unsigned long int timestamp = 0;
+  if (millis() - timestamp < 500)
+  {
+    // Show powerLevel on leds
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      leds[i] = CRGB::Black;
+      if (i < map(analogRead(POTPIN), 0, 1023, 0, NUM_LEDS))
+      {
+        leds[i] = CRGB::Red;
+      }
+    }
+
+    FastLED.show();
+    timestamp = millis();
+  }
+
+  rampUp(map(analogRead(POTPIN), 0, 1023, 0, 100));
+}
 
 // Converts 0-100% to 8 bit PWM value for analogWrite function
 uint8_t powerLevel(uint8_t powerPercent)
@@ -81,31 +140,4 @@ void rampUp(uint8_t maxPower)
     // Don't write powerPercent to output pin, so that the value set on the pot can be read on the display.
     analogWrite(SPEEDPIN, powerLevel(MINPOWER)); // set output to minPower for next run
   }
-}
-
-void setup()
-{
-
-#ifdef DEBUG_SERIAL
-  Serial.begin(9600);
-#endif
-
-  // Pin setups
-  pinMode(SPEEDPIN, OUTPUT);
-  pinMode(ACCPIN, INPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
-}
-
-void loop()
-{
-#ifdef DEBUG_SERIAL
-  static unsigned long int timestamp = 0;
-  if (millis() - timestamp < 500)
-  {
-    Serial.println(map(analogRead(POTPIN), 0, 1023, 0, 100));
-    timestamp = millis();
-  }
-#endif
-
-  rampUp(map(analogRead(POTPIN), 0, 1023, 0, 100));
 }
