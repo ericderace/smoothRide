@@ -10,7 +10,7 @@
 //
 // TO DO:
 // - Implement usable serial debugging
-// - check if maxPower < MINPOWER (see TO DO comment)
+// - Delete MINPOWER macro. Should always be 0, as MINPWMPOWER is the parameter used here.
 // - Add fire
 
 #include <Arduino.h>
@@ -24,7 +24,8 @@
 #define POTPIN A0  // Pin that reads potentiometer input
 
 // Ramp parameters
-#define MINPOWER 0 // minimum power level to start ramping up from
+#define MINPOWER 0 // minimum power level to start ramping up from (%)
+#define MINPWMPOWER 63 // PWM power (0-255) at 0% powerLevel
 #define RAMPT 50   // time (ms) per percent of power ramp up. lower value = faster acceleration
 
 // FastLED
@@ -34,7 +35,7 @@
 #define CHIPSET WS2812B
 #define NUM_LEDS 14
 
-#define BRIGHTNESS 200
+#define BRIGHTNESS 63
 
 bool gReverseDirection = false;
 
@@ -74,15 +75,17 @@ void loop()
 {
 
   static unsigned long int timestamp = 0;
-  if (millis() - timestamp < 500)
+  if (millis() - timestamp < 100)
   {
     // Show powerLevel on leds
     for (int i = 0; i < NUM_LEDS; i++)
     {
-      leds[i] = CRGB::Black;
+      leds[(NUM_LEDS - 1) - i] = CRGB::Black; // reset to black in case it was previously set to a color
       if (i < map(analogRead(POTPIN), 0, 1023, 0, NUM_LEDS))
       {
-        leds[i] = CRGB::Red;
+        if (i < 8) leds[(NUM_LEDS - 1) - i] = CRGB::Green; // LEDS are reversed
+        else if (i < 11) leds[(NUM_LEDS - 1) - i] = CRGB::Yellow;
+        else leds[(NUM_LEDS - 1) - i] = CRGB::Red;
       }
     }
 
@@ -96,7 +99,7 @@ void loop()
 // Converts 0-100% to 8 bit PWM value for analogWrite function
 uint8_t powerLevel(uint8_t powerPercent)
 {
-  return map(powerPercent, 0, 100, 50, 255);
+  return map(powerPercent, 0, 100, MINPWMPOWER, 255);
 }
 
 // Returns true if Accelerator pedal is pressed
