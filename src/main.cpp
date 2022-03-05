@@ -30,7 +30,7 @@
 
 // FastLED
 
-#define LED_PIN 5
+#define LED_PIN 7
 #define COLOR_ORDER GRB
 #define CHIPSET WS2812B
 #define NUM_LEDS 14
