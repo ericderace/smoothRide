@@ -12,6 +12,9 @@
 // - Implement usable serial debugging
 // - Delete MINPOWER macro. Should always be 0, as MINPWMPOWER is the parameter used here.
 // - Add fire
+//
+// Runs on Arduino Duemilanove
+//
 
 #include <Arduino.h>
 #include <FastLED.h>
@@ -19,13 +22,13 @@
 //#define DEBUG_SERIAL // Enable serial debugging
 
 // IO Pin definitions
-#define SPEEDPIN 3 // Pin where the speed controller is conected to
+#define SPEEDPIN 3 // Pin where the MOSFETs are conected
 #define ACCPIN 4   // Pin that reads Power Wheel accelerator input
 #define POTPIN A0  // Pin that reads potentiometer input
 
 // Ramp parameters
 #define MINPOWER 0 // minimum power level to start ramping up from (%)
-#define MINPWMPOWER 63 // PWM power (0-255) at 0% powerLevel
+#define MINPWMPOWER 63 // PWM power (0-255) at 0% powerLevel. Makes sure that the potientiometer range excludes a zone where there isn't enough voltage to push the vehicle forward.
 #define RAMPT 50   // time (ms) per percent of power ramp up. lower value = faster acceleration
 
 // FastLED
