@@ -139,8 +139,8 @@ void rampUp(uint8_t maxPower)
   if (!acc())
   {
     digitalWrite(LED_BUILTIN, LOW); // turn off built-in LED
-    powerPercent = MINPOWER;        // Reset power to minimum when accelerator pedal is depressed. TO DO: check if maxPower < MINPOWER
-    // Don't write powerPercent to output pin, so that the value set on the pot can be read on the display.
+    powerPercent = maxPower;        // Reset power to maximum desired power when accelerator pedal is depressed.
+    
     analogWrite(SPEEDPIN, powerLevel(powerPercent)); // set output to powerPercent in case accelerator input is disabled (cut wire?)
   }
 }
