@@ -27,8 +27,8 @@
 #define POTPIN A0  // Pin that reads potentiometer input
 
 // Ramp parameters
-#define MINPOWER 0 // minimum power level to start ramping up from (%)
-#define MINPWMPOWER 63 // PWM power (0-255) at 0% powerLevel. Makes sure that the potientiometer range excludes a zone where there isn't enough voltage to push the vehicle forward.
+#define MINPOWER 10 // minimum power level to start ramping up from (%)
+#define MINPWMPOWER 15 // PWM power (0-255) at 0% powerLevel. Makes sure that the potientiometer range excludes a zone where there isn't enough voltage to push the vehicle forward.
 #define RAMPT 50   // time (ms) per percent of power ramp up. lower value = faster acceleration
 
 // FastLED
@@ -142,7 +142,7 @@ void rampUp(uint8_t maxPower)
   if (!acc())
   {
     digitalWrite(LED_BUILTIN, LOW); // turn off built-in LED
-    powerPercent = maxPower;        // Reset power to maximum desired power when accelerator pedal is depressed.
+    powerPercent = MINPOWER;        // Reset power to maximum desired power when accelerator pedal is depressed.
     
     analogWrite(SPEEDPIN, powerLevel(powerPercent)); // set output to powerPercent in case accelerator input is disabled (cut wire?)
   }
