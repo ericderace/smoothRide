@@ -10,9 +10,9 @@
 //
 // TO DO:
 // - Implement usable serial debugging
-// - Delete MINPOWER macro. Should always be 0, as MINPWMPOWER is the parameter used here.
 // - Add fire
-//
+// - Debounce accelerator pedal (wind down pwm so that it doesn't restart at MINPOWER, with time decay)
+// - (done) Show current power level on LED's instead of desired power level when acc()
 // Runs on Arduino Duemilanove
 //
 
@@ -28,7 +28,7 @@
 
 // Ramp parameters
 #define MINPOWER 10 // minimum power level to start ramping up from (%)
-#define MINPWMPOWER 15 // PWM power (0-255) at 0% powerLevel. Makes sure that the potientiometer range excludes a zone where there isn't enough voltage to push the vehicle forward.
+#define MINPWMPOWER 23 // PWM power (0-255) at 0% powerLevel. Makes sure that the potientiometer range excludes a zone where there isn't enough voltage to push the vehicle forward.
 #define RAMPT 50   // time (ms) per percent of power ramp up. lower value = faster acceleration
 
 // FastLED
@@ -43,6 +43,9 @@
 bool gReverseDirection = false;
 
 CRGB leds[NUM_LEDS];
+
+// Global Variables
+uint8_t pwmPower = 0;
 
 // Function prototypes
 
@@ -81,10 +84,20 @@ void loop()
   if (millis() - timestamp < 100)
   {
     // Show powerLevel on leds
+    // if acc(), show current pwm output level. Else, show desired power level.
+    static uint8_t d_powerLevel = 0;
+    if (acc())
+    {
+      d_powerLevel = map(pwmPower, MINPOWER, 255, 0, NUM_LEDS);
+    }
+    else if (!acc()) {
+      d_powerLevel = map(analogRead(POTPIN), 0, 1023, 0, NUM_LEDS);
+    }
+    
     for (int i = 0; i < NUM_LEDS; i++)
     {
       leds[(NUM_LEDS - 1) - i] = CRGB::Black; // reset to black in case it was previously set to a color
-      if (i < map(analogRead(POTPIN), 0, 1023, 0, NUM_LEDS))
+      if (i < d_powerLevel)
       {
         if (i < 8) leds[(NUM_LEDS - 1) - i] = CRGB::Green; // LEDS are reversed
         else if (i < 11) leds[(NUM_LEDS - 1) - i] = CRGB::Yellow;
@@ -134,6 +147,7 @@ void rampUp(uint8_t maxPower)
         powerPercent = maxPower; // Stop increasing at maxPower
       }
       analogWrite(SPEEDPIN, powerLevel(powerPercent));
+      pwmPower = powerLevel(powerPercent);
       powerPercent++; // Increase power by 1 percent for next loop
 
       timestamp = millis();
