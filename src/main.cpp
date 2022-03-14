@@ -11,8 +11,9 @@
 // TO DO:
 // - Implement usable serial debugging
 // - Add fire
-// - Debounce accelerator pedal (wind down pwm so that it doesn't restart at MINPOWER, with time decay)
+// - (done)Debounce accelerator pedal (wind down pwm so that it doesn't restart at MINPOWER, with time decay)
 // - (done) Show current power level on LED's instead of desired power level when acc()
+// - bug: does not seem to start at MINPOWER anymore
 // Runs on Arduino Duemilanove
 //
 
@@ -29,7 +30,8 @@
 // Ramp parameters
 #define MINPOWER 10 // minimum power level to start ramping up from (%)
 #define MINPWMPOWER 23 // PWM power (0-255) at 0% powerLevel. Makes sure that the potientiometer range excludes a zone where there isn't enough voltage to push the vehicle forward.
-#define RAMPT 50   // time (ms) per percent of power ramp up. lower value = faster acceleration
+#define RAMPT 25   // time (ms) per percent of power ramp up. lower value = faster acceleration
+#define DECAYT 10 // time(ms) per percent of power ramp down
 
 // FastLED
 
@@ -38,14 +40,14 @@
 #define CHIPSET WS2812B
 #define NUM_LEDS 14
 
-#define BRIGHTNESS 63
+#define BRIGHTNESS 127
 
 bool gReverseDirection = false;
 
 CRGB leds[NUM_LEDS];
 
 // Global Variables
-uint8_t pwmPower = 0;
+uint8_t pwmPowerPercent = 0;
 
 // Function prototypes
 
@@ -88,7 +90,7 @@ void loop()
     static uint8_t d_powerLevel = 0;
     if (acc())
     {
-      d_powerLevel = map(pwmPower, MINPOWER, 255, 0, NUM_LEDS);
+      d_powerLevel = map(pwmPowerPercent, 0, 100, 0, NUM_LEDS);
     }
     else if (!acc()) {
       d_powerLevel = map(analogRead(POTPIN), 0, 1023, 0, NUM_LEDS);
@@ -133,7 +135,7 @@ void rampUp(uint8_t maxPower)
   {
     if (!lastAcc) // Run this if accelerator was off before this function was run this time
     {
-      powerPercent = MINPOWER;
+      if (powerPercent < MINPOWER) powerPercent = MINPOWER;
       lastAcc = true; // make sure we don't reset to MINPOWER next time
     }
 
@@ -147,7 +149,7 @@ void rampUp(uint8_t maxPower)
         powerPercent = maxPower; // Stop increasing at maxPower
       }
       analogWrite(SPEEDPIN, powerLevel(powerPercent));
-      pwmPower = powerLevel(powerPercent);
+      pwmPowerPercent = powerPercent;
       powerPercent++; // Increase power by 1 percent for next loop
 
       timestamp = millis();
@@ -155,9 +157,15 @@ void rampUp(uint8_t maxPower)
   }
   if (!acc())
   {
+    static unsigned long int timestamp = 0;
+    if (millis() - timestamp > DECAYT)
+    {
+      if (powerPercent > 0) powerPercent--;
+      timestamp = millis();
+    }
     digitalWrite(LED_BUILTIN, LOW); // turn off built-in LED
-    powerPercent = MINPOWER;        // Reset power to maximum desired power when accelerator pedal is depressed.
+    //powerPercent = MINPOWER;        // Reset power to maximum desired power when accelerator pedal is depressed.
     
-    analogWrite(SPEEDPIN, powerLevel(powerPercent)); // set output to powerPercent in case accelerator input is disabled (cut wire?)
+    analogWrite(SPEEDPIN, powerLevel(maxPower)); // set output to maxPower in case accelerator input is disabled (cut wire?)
   }
 }
